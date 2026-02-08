@@ -212,6 +212,19 @@ exports.join = async (event, context) => {
     return response(200, 'application/json', JSON.stringify(joinResponse, null, 2));
   } catch (error) {
     console.error('Failed to create new attendee: ' + JSON.stringify(error));
+    
+    // If meeting not found, delete stale DynamoDB record and ask client to retry
+    if (error.name === 'NotFoundException' && error.message.includes('Meeting')) {
+      console.info('Meeting not found, deleting stale DynamoDB record');
+      await ddb.deleteItem({
+        TableName: MEETINGS_TABLE_NAME,
+        Key: {
+          'Title': { S: query.title }
+        }
+      });
+      return response(404, 'application/json', JSON.stringify({ error: 'Meeting expired. Please try again.' }));
+    }
+    
     let statusCode = 400;
     if (error.code == "ServiceFailureException" || error.code == "ServiceUnavailableException"){
       statusCode = 500;
@@ -227,6 +240,15 @@ exports.end = async (event, context) => {
 
   // End the meeting. All attendee connections will hang up.
   await chimeSDKMeetings.deleteMeeting({ MeetingId: meeting.Meeting.MeetingId });
+  
+  // Delete the meeting from DynamoDB
+  await ddb.deleteItem({
+    TableName: MEETINGS_TABLE_NAME,
+    Key: {
+      'Title': { S: event.queryStringParameters.title }
+    }
+  });
+  
   return response(200, 'application/json', JSON.stringify({}));
 };
 

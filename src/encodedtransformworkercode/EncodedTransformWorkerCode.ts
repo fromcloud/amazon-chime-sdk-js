@@ -3,7 +3,7 @@
 
 /**
  * This file was generated with the `generate-media-transform-worker-code.js` script.
- *
+ * 
  * The worker code is bundled inline (all classes concatenated) because Web Workers
  * run in isolation and cannot use module imports from the main thread.
  */

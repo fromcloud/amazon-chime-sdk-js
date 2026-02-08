@@ -96,9 +96,7 @@ function serve(host = '127.0.0.1:8080') {
         }
 
         if (!meeting) {
-          if (!requestUrl.query.region) {
-            respond(response, 400, 'application/json', JSON.stringify({ error: 'Need region parameter set if meeting has not yet been created' }));
-          }
+          const region = requestUrl.query.region || currentRegion;
           // If the meeting does not exist, check if we were passed in a meeting ID instead of an external meeting ID.  If so, use that one
           try {
             if (meetingIdFormat.test(requestUrl.query.title)) {
@@ -118,7 +116,7 @@ function serve(host = '127.0.0.1:8080') {
               ClientRequestToken: uuidv4(),
               // Specify the media region (where the meeting is hosted).
               // In this case, we use the region selected by the user.
-              MediaRegion: requestUrl.query.region,
+              MediaRegion: region,
               // Any meeting ID you wish to associate with the meeting.
               // For simplicity here, we use the meeting title.
               ExternalMeetingId: requestUrl.query.title.substring(0, 64),
